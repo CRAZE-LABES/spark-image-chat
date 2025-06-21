@@ -3,12 +3,14 @@ import { useState } from "react";
 import { Send, Mic, Paperclip, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { sendMessageToGemini } from "@/services/geminiApi";
 
 const ChatArea = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'ai'}>>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
     
     const newMessage = {
@@ -18,17 +20,34 @@ const ChatArea = () => {
     };
     
     setMessages(prev => [...prev, newMessage]);
+    const currentMessage = message;
     setMessage("");
+    setIsLoading(true);
     
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
+    try {
+      console.log('Sending message to Gemini:', currentMessage);
+      const aiResponse = await sendMessageToGemini(currentMessage);
+      
+      const aiMessage = {
         id: Date.now() + 1,
-        text: "I'm a Gemini-powered AI assistant designed to look like ChatGPT. How can I help you today?",
+        text: aiResponse,
         sender: 'ai' as const
       };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+      
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your API key and try again.`,
+        sender: 'ai' as const
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -93,6 +112,17 @@ const ChatArea = () => {
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -116,6 +146,7 @@ const ChatArea = () => {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask anything"
+                disabled={isLoading}
                 className="flex-1 border-0 bg-transparent focus:ring-0 text-gray-900 placeholder-gray-500 resize-none"
               />
               
@@ -125,7 +156,7 @@ const ChatArea = () => {
                 </Button>
                 <Button 
                   onClick={handleSendMessage}
-                  disabled={!message.trim()}
+                  disabled={!message.trim() || isLoading}
                   size="sm" 
                   className="bg-gray-900 hover:bg-black text-white rounded-full p-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
