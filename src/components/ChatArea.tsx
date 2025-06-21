@@ -1,15 +1,17 @@
-
 import { useState } from "react";
-import { Send, Mic, Paperclip, Image } from "lucide-react";
+import { Send, Mic, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { sendMessageToGemini } from "@/services/geminiApi";
+import { generateImage } from "@/services/imageService";
 import MessageRenderer from "./MessageRenderer";
+import PhotoSelector from "./PhotoSelector";
+import TextEditor from "./TextEditor";
 
 const ChatArea = () => {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'ai'}>>([]);
+  const [messages, setMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'ai', imageUrl?: string}>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [useTextEditor, setUseTextEditor] = useState(false);
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
@@ -51,6 +53,40 @@ const ChatArea = () => {
     }
   };
 
+  const handleImageSelect = (imageUrl: string) => {
+    const imageMessage = {
+      id: Date.now(),
+      text: "Here's the image you selected:",
+      sender: 'user' as const,
+      imageUrl
+    };
+    setMessages(prev => [...prev, imageMessage]);
+  };
+
+  const handleImageGenerate = async (prompt: string) => {
+    setIsLoading(true);
+    try {
+      const generatedImage = await generateImage({ prompt });
+      const imageMessage = {
+        id: Date.now(),
+        text: `Generated image: "${prompt}"`,
+        sender: 'ai' as const,
+        imageUrl: generatedImage.url
+      };
+      setMessages(prev => [...prev, imageMessage]);
+    } catch (error) {
+      console.error('Error generating image:', error);
+      const errorMessage = {
+        id: Date.now(),
+        text: 'Sorry, I had trouble generating that image. Please try again.',
+        sender: 'ai' as const
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -74,7 +110,7 @@ const ChatArea = () => {
                   What can I help with?
                 </h1>
                 <p className="text-gray-600 text-lg">
-                  I can format text with **bold**, *italic*, `code`, generate content about images, and help with file creation
+                  I can format text with **bold**, *italic*, `code`, generate images, and help with file creation
                 </p>
               </div>
               
@@ -85,16 +121,16 @@ const ChatArea = () => {
                   <p className="text-gray-600 text-sm">Create formatted text with bold, italic, and code</p>
                 </div>
                 <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">🖼️ Image Analysis</h3>
-                  <p className="text-gray-600 text-sm">Describe and analyze images</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">🖼️ Image Generation</h3>
+                  <p className="text-gray-600 text-sm">Generate and upload images</p>
                 </div>
                 <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
                   <h3 className="font-semibold text-gray-900 mb-2">📁 File Generation</h3>
                   <p className="text-gray-600 text-sm">Help create .zip files and other documents</p>
                 </div>
                 <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">💻 Code Assistant</h3>
-                  <p className="text-gray-600 text-sm">Help with programming and debugging</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">✍️ Text Editing</h3>
+                  <p className="text-gray-600 text-sm">Advanced text editing with formatting tools</p>
                 </div>
               </div>
             </div>
@@ -104,7 +140,18 @@ const ChatArea = () => {
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <MessageRenderer content={msg.text} sender={msg.sender} />
+                <div className="max-w-3xl">
+                  <MessageRenderer content={msg.text} sender={msg.sender} />
+                  {msg.imageUrl && (
+                    <div className="mt-2">
+                      <img 
+                        src={msg.imageUrl} 
+                        alt="Shared image" 
+                        className="max-w-sm rounded-lg shadow-md"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
             {isLoading && (
@@ -125,25 +172,47 @@ const ChatArea = () => {
       {/* Input Area */}
       <div className="border-t border-gray-200 bg-white">
         <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="mb-3 flex gap-2 items-center">
+            <Button
+              variant={useTextEditor ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setUseTextEditor(!useTextEditor)}
+              className="text-xs"
+            >
+              {useTextEditor ? "Simple Editor" : "Rich Editor"}
+            </Button>
+          </div>
+          
           <div className="relative bg-gray-50 rounded-3xl border border-gray-200 focus-within:border-gray-300 focus-within:bg-white transition-all">
             <div className="flex items-end gap-3 p-4">
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
                   <Paperclip className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
-                  <Image className="w-4 h-4" />
-                </Button>
+                <PhotoSelector 
+                  onImageSelect={handleImageSelect}
+                  onImageGenerate={handleImageGenerate}
+                />
               </div>
               
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask anything - I can format text, describe images, and help with files..."
-                disabled={isLoading}
-                className="flex-1 border-0 bg-transparent focus:ring-0 text-gray-900 placeholder-gray-500 resize-none"
-              />
+              <div className="flex-1">
+                {useTextEditor ? (
+                  <TextEditor
+                    value={message}
+                    onChange={setMessage}
+                    placeholder="Write your message with rich formatting..."
+                  />
+                ) : (
+                  <input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask anything - I can format text, generate images, and help with files..."
+                    disabled={isLoading}
+                    className="w-full border-0 bg-transparent focus:ring-0 text-gray-900 placeholder-gray-500 outline-none"
+                  />
+                )}
+              </div>
               
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
@@ -162,7 +231,7 @@ const ChatArea = () => {
           </div>
           
           <p className="text-xs text-gray-500 text-center mt-3">
-            Gemini AI can format text, analyze images, and help with file generation.
+            Gemini AI can format text, generate images, and help with file creation.
           </p>
         </div>
       </div>
