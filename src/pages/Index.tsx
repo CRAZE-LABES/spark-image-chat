@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Menu, Search, Edit, Plus, MessageSquare, Settings, Library, Sparkles } from "lucide-react";
+import { Menu, Search, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ChatArea from "@/components/ChatArea";
@@ -50,11 +50,6 @@ const Index = () => {
               className="text-gray-600 hover:text-gray-900"
             >
               <Edit className="w-4 h-4" />
-            </Button>
-            
-            <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-4 py-2 text-sm font-medium">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Get Plus
             </Button>
           </div>
         </header>
