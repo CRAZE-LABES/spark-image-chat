@@ -41,7 +41,7 @@ jobs:
       - name: 🧱 Install Capacitor & Init Android
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init spark-image-chat com.crazegpt.chat --web-dir=dist --npm-client=npm
+          npx cap init spark-image-chat com.crazegpt.chat --web-dir=dist
           npx cap add android
           npx cap sync
 
