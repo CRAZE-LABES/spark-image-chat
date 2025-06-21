@@ -1,6 +1,6 @@
 
 const GEMINI_API_KEY = 'AIzaSyAVYUIsjT4sPDAMHySBqOUsH-nlv-i810Q';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 export interface GeminiMessage {
   role: 'user' | 'model';
@@ -19,7 +19,7 @@ export const sendMessageToGemini = async (message: string): Promise<string> => {
           {
             parts: [
               {
-                text: message
+                text: `You are a helpful AI assistant. You can format text using markdown syntax. For bold text, use **bold** or __bold__. For italic text, use *italic* or _italic_. For code, use \`code\` for inline code or \`\`\`code blocks\`\`\` for multi-line code. You can also provide information about generating images and files when asked. Here's the user's message: ${message}`
               }
             ]
           }
@@ -28,7 +28,7 @@ export const sendMessageToGemini = async (message: string): Promise<string> => {
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 2048,
         }
       }),
     });

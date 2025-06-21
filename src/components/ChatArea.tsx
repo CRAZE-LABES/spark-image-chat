@@ -4,6 +4,7 @@ import { Send, Mic, Paperclip, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sendMessageToGemini } from "@/services/geminiApi";
+import MessageRenderer from "./MessageRenderer";
 
 const ChatArea = () => {
   const [message, setMessage] = useState("");
@@ -73,27 +74,27 @@ const ChatArea = () => {
                   What can I help with?
                 </h1>
                 <p className="text-gray-600 text-lg">
-                  I'm powered by Gemini AI with a ChatGPT-style interface
+                  I can format text with **bold**, *italic*, `code`, generate content about images, and help with file creation
                 </p>
               </div>
               
               {/* Suggestion Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">💡 Creative Writing</h3>
-                  <p className="text-gray-600 text-sm">Help me write a creative story or poem</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">✨ **Bold Text** Creation</h3>
+                  <p className="text-gray-600 text-sm">Create formatted text with bold, italic, and code</p>
                 </div>
                 <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">🔍 Research Help</h3>
-                  <p className="text-gray-600 text-sm">Find information and analyze data</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">🖼️ Image Analysis</h3>
+                  <p className="text-gray-600 text-sm">Describe and analyze images</p>
+                </div>
+                <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
+                  <h3 className="font-semibold text-gray-900 mb-2">📁 File Generation</h3>
+                  <p className="text-gray-600 text-sm">Help create .zip files and other documents</p>
                 </div>
                 <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
                   <h3 className="font-semibold text-gray-900 mb-2">💻 Code Assistant</h3>
                   <p className="text-gray-600 text-sm">Help with programming and debugging</p>
-                </div>
-                <div className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 cursor-pointer transition-colors border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">📚 Learning Support</h3>
-                  <p className="text-gray-600 text-sm">Explain complex topics and concepts</p>
                 </div>
               </div>
             </div>
@@ -103,13 +104,7 @@ const ChatArea = () => {
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-3xl ${
-                  msg.sender === 'user' 
-                    ? 'bg-blue-600 text-white rounded-2xl rounded-br-md' 
-                    : 'bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md'
-                } px-4 py-3`}>
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
-                </div>
+                <MessageRenderer content={msg.text} sender={msg.sender} />
               </div>
             ))}
             {isLoading && (
@@ -145,7 +140,7 @@ const ChatArea = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask anything"
+                placeholder="Ask anything - I can format text, describe images, and help with files..."
                 disabled={isLoading}
                 className="flex-1 border-0 bg-transparent focus:ring-0 text-gray-900 placeholder-gray-500 resize-none"
               />
@@ -167,7 +162,7 @@ const ChatArea = () => {
           </div>
           
           <p className="text-xs text-gray-500 text-center mt-3">
-            Gemini AI can make mistakes. Check important info.
+            Gemini AI can format text, analyze images, and help with file generation.
           </p>
         </div>
       </div>
