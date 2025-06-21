@@ -1,11 +1,66 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import { Menu, Search, Edit, Plus, MessageSquare, Settings, Library, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import ChatArea from "@/components/ChatArea";
+import Sidebar from "@/components/Sidebar";
 
 const Index = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-white flex w-full">
+      {/* Sidebar */}
+      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            {!isSidebarOpen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSidebarOpen(true)}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            )}
+            
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-80 bg-gray-50 border-gray-200 rounded-full focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            
+            <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-4 py-2 text-sm font-medium">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Get Plus
+            </Button>
+          </div>
+        </header>
+
+        {/* Chat Area */}
+        <ChatArea />
       </div>
     </div>
   );
