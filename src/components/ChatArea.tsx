@@ -12,7 +12,12 @@ import ModelSelector from "./ModelSelector";
 import ChatHistory from "./ChatHistory";
 import FileUpload from "./FileUpload";
 
-const ChatArea = () => {
+interface ChatAreaProps {
+  selectedSessionId?: string;
+  onSessionUpdate?: () => void;
+}
+
+const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,12 +29,29 @@ const ChatArea = () => {
 
   useEffect(() => {
     loadChatHistory();
-    generateNewSession();
+    if (!currentSessionId) {
+      generateNewSession();
+    }
   }, []);
+
+  useEffect(() => {
+    if (selectedSessionId && selectedSessionId !== currentSessionId) {
+      loadSession(selectedSessionId);
+    }
+  }, [selectedSessionId]);
 
   const loadChatHistory = () => {
     const history = getChatHistory();
     setChatHistory(history);
+  };
+
+  const loadSession = (sessionId: string) => {
+    const history = getChatHistory();
+    const session = history.find(s => s.id === sessionId);
+    if (session) {
+      setMessages(session.messages);
+      setCurrentSessionId(sessionId);
+    }
   };
 
   const generateNewSession = () => {
@@ -51,6 +73,7 @@ const ChatArea = () => {
 
     saveChatSession(session);
     loadChatHistory();
+    onSessionUpdate?.();
   };
 
   const handleSendMessage = async () => {
@@ -80,7 +103,15 @@ const ChatArea = () => {
         return;
       }
       
-      const aiResponse = await sendMessageToGemini(currentMessage);
+      // Build conversation context for memory
+      const conversationContext = updatedMessages
+        .slice(-10) // Last 10 messages for context
+        .map(msg => `${msg.sender === 'user' ? 'User' : 'Assistant'}: ${msg.text}`)
+        .join('\n');
+      
+      const contextualMessage = `Previous conversation context:\n${conversationContext}\n\nCurrent question: ${currentMessage}`;
+      
+      const aiResponse = await sendMessageToGemini(contextualMessage);
       
       const aiMessage: ChatMessage = {
         id: Date.now() + 1,
@@ -276,6 +307,7 @@ CrazeGPT is based on Gemini AI and can help you with:
 
   const handleDeleteSession = (sessionId: string) => {
     loadChatHistory();
+    onSessionUpdate?.();
     if (sessionId === currentSessionId) {
       generateNewSession();
     }
@@ -304,43 +336,33 @@ CrazeGPT is based on Gemini AI and can help you with:
                   Welcome to CrazeGPT
                 </h1>
                 <p className="text-gray-600 text-xl mb-2">
-                  Your Professional AI Assistant with Advanced Features
+                  Your Professional AI Assistant with Infinite Intelligence
                 </p>
                 <p className="text-gray-500 text-lg">
-                  Created by **CraftingCrazeGaming** • Powered by Gemini AI
+                  Created by **CraftingCrazeGaming** • More Advanced than ChatGPT, DeepSeek, Grok, and Claude
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
                   <div className="text-4xl mb-4">🧠</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Multiple AI Models</h3>
-                  <p className="text-gray-600 text-sm">Choose from different AI models for specific tasks</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">∞ AI Models</h3>
+                  <p className="text-gray-600 text-sm">Unlimited model selection for any task</p>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
                   <div className="text-4xl mb-4">💾</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Chat History</h3>
-                  <p className="text-gray-600 text-sm">Save and resume your conversations anytime</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">Perfect Memory</h3>
+                  <p className="text-gray-600 text-sm">Never forgets your conversations</p>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
                   <div className="text-4xl mb-4">📋</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Code with Copy</h3>
-                  <p className="text-gray-600 text-sm">Generate code blocks with one-click copy</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">Unlimited Code</h3>
+                  <p className="text-gray-600 text-sm">Generate any code with instant copy</p>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">📁</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">File Upload & Generation</h3>
-                  <p className="text-gray-600 text-sm">Upload files and generate any file type</p>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">🖼️</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Image Creation</h3>
-                  <p className="text-gray-600 text-sm">Generate and analyze images with AI</p>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">✨</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Rich Text Editor</h3>
-                  <p className="text-gray-600 text-sm">Advanced text formatting and editing</p>
+                  <div className="text-4xl mb-4">🚀</div>
+                  <h3 className="font-semibent text-gray-900 mb-2">∞ Features</h3>
+                  <p className="text-gray-600 text-sm">Infinite capabilities beyond any AI</p>
                 </div>
               </div>
             </div>
@@ -464,7 +486,7 @@ CrazeGPT is based on Gemini AI and can help you with:
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Ask me anything! I can format text, generate images, create files, and more..."
+                    placeholder="Ask me anything! I remember our conversation and have infinite capabilities..."
                     disabled={isLoading}
                     className="w-full border-0 bg-transparent focus:ring-0 text-gray-900 placeholder-gray-500 outline-none text-lg"
                   />
@@ -488,7 +510,7 @@ CrazeGPT is based on Gemini AI and can help you with:
           </div>
           
           <p className="text-xs text-gray-500 text-center mt-3">
-            <strong>CrazeGPT</strong> • Created by CraftingCrazeGaming • Model: {selectedModel.replace('-', ' ').toUpperCase()}
+            <strong>CrazeGPT</strong> • Created by CraftingCrazeGaming • Model: {selectedModel.replace('-', ' ').toUpperCase()} • More Advanced than ChatGPT, DeepSeek, Grok & Claude
           </p>
         </div>
       </div>

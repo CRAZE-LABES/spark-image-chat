@@ -1,19 +1,52 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, Search, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ChatArea from "@/components/ChatArea";
 import Sidebar from "@/components/Sidebar";
+import { ChatSession, getChatHistory } from "@/services/chatHistoryService";
 
 const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>("");
+
+  useEffect(() => {
+    loadChatHistory();
+  }, []);
+
+  const loadChatHistory = () => {
+    const history = getChatHistory();
+    setChatSessions(history);
+  };
+
+  const handleSelectSession = (session: ChatSession) => {
+    setCurrentSessionId(session.id);
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    loadChatHistory();
+    if (sessionId === currentSessionId) {
+      setCurrentSessionId("");
+    }
+  };
+
+  const handleSessionUpdate = () => {
+    loadChatHistory();
+  };
 
   return (
     <div className="min-h-screen bg-white flex w-full">
       {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        chatSessions={chatSessions}
+        onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
+      />
       
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
@@ -35,7 +68,7 @@ const Index = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search"
+                placeholder="Search conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 w-80 bg-gray-50 border-gray-200 rounded-full focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -55,7 +88,10 @@ const Index = () => {
         </header>
 
         {/* Chat Area */}
-        <ChatArea />
+        <ChatArea 
+          selectedSessionId={currentSessionId}
+          onSessionUpdate={handleSessionUpdate}
+        />
       </div>
     </div>
   );
