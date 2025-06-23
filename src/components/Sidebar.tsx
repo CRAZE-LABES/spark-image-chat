@@ -1,4 +1,3 @@
-
 import { MessageSquare, Library, Settings, Plus, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -9,9 +8,9 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
   const menuItems = [
-    { icon: MessageSquare, label: "ChatGPT", active: true },
-    { icon: Library, label: "Explore GPTs" },
-    { icon: Library, label: "Library", badge: "45" },
+    { icon: MessageSquare, label: "CrazeGPT", active: true },
+    { icon: Library, label: "Chat Library" },
+    { icon: Library, label: "Generated Images", badge: "New" },
   ];
 
   return (
@@ -31,7 +30,10 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">ChatGPT</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">CrazeGPT</h2>
+              <p className="text-xs text-gray-500">Super Intelligent AI</p>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -44,7 +46,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
 
           {/* New Chat Button */}
           <div className="p-4">
-            <Button className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg">
+            <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-lg">
               <Plus className="w-4 h-4 mr-2" />
               New chat
             </Button>
@@ -58,7 +60,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                   key={index}
                   className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                     item.active 
-                      ? 'bg-gray-200 text-gray-900' 
+                      ? 'bg-blue-100 text-blue-900 border border-blue-200' 
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
@@ -67,7 +69,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                     <span className="font-medium">{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
                       {item.badge}
                     </span>
                   )}
@@ -75,20 +77,23 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
               ))}
             </div>
 
-            {/* Chats Section */}
+            {/* Features Section */}
             <div className="mt-8">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Chats
+                Features
               </h3>
               <div className="space-y-1">
-                {/* Example chat items */}
                 <div className="px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg cursor-pointer transition-colors">
-                  <div className="text-sm font-medium truncate">Previous conversation</div>
-                  <div className="text-xs text-gray-500">2 hours ago</div>
+                  <div className="text-sm font-medium truncate">📋 Code Generation</div>
+                  <div className="text-xs text-gray-500">With copy button</div>
                 </div>
                 <div className="px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg cursor-pointer transition-colors">
-                  <div className="text-sm font-medium truncate">AI assistant help</div>
-                  <div className="text-xs text-gray-500">Yesterday</div>
+                  <div className="text-sm font-medium truncate">🖼️ Image Creator</div>
+                  <div className="text-xs text-gray-500">AI powered</div>
+                </div>
+                <div className="px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg cursor-pointer transition-colors">
+                  <div className="text-sm font-medium truncate">📁 File Generator</div>
+                  <div className="text-xs text-gray-500">Any format</div>
                 </div>
               </div>
             </div>
@@ -99,6 +104,9 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
             <div className="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg cursor-pointer transition-colors">
               <Settings className="w-5 h-5 mr-3" />
               <span className="font-medium">Settings</span>
+            </div>
+            <div className="mt-2 text-xs text-gray-500 text-center">
+              Created by CraftingCrazeGaming
             </div>
           </div>
         </div>

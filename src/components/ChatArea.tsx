@@ -1,77 +1,123 @@
-
-import { useState } from "react";
-import { Send, Mic, Paperclip, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Send, Mic, Paperclip, Download, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMessageToGemini } from "@/services/geminiApi";
 import { generateImage } from "@/services/imageService";
 import { generateFile, downloadFile } from "@/services/fileService";
+import { ChatSession, ChatMessage, saveChatSession, getChatHistory, generateChatTitle } from "@/services/chatHistoryService";
 import MessageRenderer from "./MessageRenderer";
 import PhotoSelector from "./PhotoSelector";
 import TextEditor from "./TextEditor";
+import ModelSelector from "./ModelSelector";
+import ChatHistory from "./ChatHistory";
+import FileUpload from "./FileUpload";
 
 const ChatArea = () => {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'ai', imageUrl?: string, fileUrl?: string, fileName?: string}>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [useTextEditor, setUseTextEditor] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
+  const [currentSessionId, setCurrentSessionId] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    loadChatHistory();
+    generateNewSession();
+  }, []);
+
+  const loadChatHistory = () => {
+    const history = getChatHistory();
+    setChatHistory(history);
+  };
+
+  const generateNewSession = () => {
+    const newSessionId = `session_${Date.now()}`;
+    setCurrentSessionId(newSessionId);
+    setMessages([]);
+  };
+
+  const saveCurrentSession = (updatedMessages: ChatMessage[]) => {
+    if (updatedMessages.length === 0) return;
+
+    const session: ChatSession = {
+      id: currentSessionId,
+      title: generateChatTitle(updatedMessages[0].text),
+      messages: updatedMessages,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    saveChatSession(session);
+    loadChatHistory();
+  };
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
     
     console.log('Sending message:', message);
     
-    const newMessage = {
+    const newMessage: ChatMessage = {
       id: Date.now(),
       text: message,
-      sender: 'user' as const
+      sender: 'user',
+      timestamp: new Date(),
+      model: selectedModel
     };
     
-    setMessages(prev => [...prev, newMessage]);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
     const currentMessage = message;
     setMessage("");
     setIsLoading(true);
     
     try {
-      // Check if user wants to generate a file
       if (currentMessage.toLowerCase().includes('create file') || 
           currentMessage.toLowerCase().includes('generate file') ||
           currentMessage.toLowerCase().includes('make a file')) {
-        
-        await handleFileGeneration(currentMessage);
+        await handleFileGeneration(currentMessage, updatedMessages);
         return;
       }
       
       const aiResponse = await sendMessageToGemini(currentMessage);
       
-      const aiMessage = {
+      const aiMessage: ChatMessage = {
         id: Date.now() + 1,
         text: aiResponse,
-        sender: 'ai' as const
+        sender: 'ai',
+        timestamp: new Date(),
+        model: selectedModel
       };
       
-      setMessages(prev => [...prev, aiMessage]);
+      const finalMessages = [...updatedMessages, aiMessage];
+      setMessages(finalMessages);
+      saveCurrentSession(finalMessages);
       console.log('AI response received:', aiResponse);
       
     } catch (error) {
       console.error('Error getting AI response:', error);
       
-      const errorMessage = {
+      const errorMessage: ChatMessage = {
         id: Date.now() + 1,
         text: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your connection and try again.`,
-        sender: 'ai' as const
+        sender: 'ai',
+        timestamp: new Date(),
+        model: selectedModel
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      const finalMessages = [...updatedMessages, errorMessage];
+      setMessages(finalMessages);
+      saveCurrentSession(finalMessages);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFileGeneration = async (prompt: string) => {
+  const handleFileGeneration = async (prompt: string, currentMessages: ChatMessage[]) => {
     try {
       console.log('Generating file for prompt:', prompt);
       
-      // Determine file type and content based on prompt
       let fileType: 'txt' | 'json' | 'html' | 'js' | 'css' = 'txt';
       let content = '';
       let filename = '';
@@ -112,37 +158,51 @@ CrazeGPT is based on Gemini AI and can help you with:
       
       const generatedFile = await generateFile({ type: fileType, content, filename });
       
-      const fileMessage = {
+      const fileMessage: ChatMessage = {
         id: Date.now() + 1,
         text: `I've generated a ${fileType.toUpperCase()} file for you! Click the download button to save it.`,
-        sender: 'ai' as const,
+        sender: 'ai',
+        timestamp: new Date(),
         fileUrl: generatedFile.url,
-        fileName: generatedFile.filename
+        fileName: generatedFile.filename,
+        model: selectedModel
       };
       
-      setMessages(prev => [...prev, fileMessage]);
+      const finalMessages = [...currentMessages, fileMessage];
+      setMessages(finalMessages);
+      saveCurrentSession(finalMessages);
       console.log('File generated successfully');
       
     } catch (error) {
       console.error('Error generating file:', error);
-      const errorMessage = {
+      const errorMessage: ChatMessage = {
         id: Date.now() + 1,
         text: 'Sorry, I had trouble generating that file. Please try again.',
-        sender: 'ai' as const
+        sender: 'ai',
+        timestamp: new Date(),
+        model: selectedModel
       };
-      setMessages(prev => [...prev, errorMessage]);
+      const finalMessages = [...currentMessages, errorMessage];
+      setMessages(finalMessages);
+      saveCurrentSession(finalMessages);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleImageSelect = (imageUrl: string) => {
     console.log('Image selected:', imageUrl);
-    const imageMessage = {
+    const imageMessage: ChatMessage = {
       id: Date.now(),
       text: "Here's the image you selected:",
-      sender: 'user' as const,
-      imageUrl
+      sender: 'user',
+      timestamp: new Date(),
+      imageUrl,
+      model: selectedModel
     };
-    setMessages(prev => [...prev, imageMessage]);
+    const updatedMessages = [...messages, imageMessage];
+    setMessages(updatedMessages);
+    saveCurrentSession(updatedMessages);
   };
 
   const handleImageGenerate = async (prompt: string) => {
@@ -150,24 +210,74 @@ CrazeGPT is based on Gemini AI and can help you with:
     try {
       console.log('Generating image with AI for prompt:', prompt);
       const generatedImage = await generateImage({ prompt });
-      const imageMessage = {
+      const imageMessage: ChatMessage = {
         id: Date.now(),
         text: `Generated image: "${prompt}"`,
-        sender: 'ai' as const,
-        imageUrl: generatedImage.url
+        sender: 'ai',
+        timestamp: new Date(),
+        imageUrl: generatedImage.url,
+        model: selectedModel
       };
-      setMessages(prev => [...prev, imageMessage]);
+      const updatedMessages = [...messages, imageMessage];
+      setMessages(updatedMessages);
+      saveCurrentSession(updatedMessages);
       console.log('Image generated successfully');
     } catch (error) {
       console.error('Error generating image:', error);
-      const errorMessage = {
+      const errorMessage: ChatMessage = {
         id: Date.now(),
         text: 'Sorry, I had trouble generating that image. Please try again.',
-        sender: 'ai' as const
+        sender: 'ai',
+        timestamp: new Date(),
+        model: selectedModel
       };
-      setMessages(prev => [...prev, errorMessage]);
+      const updatedMessages = [...messages, errorMessage];
+      setMessages(updatedMessages);
+      saveCurrentSession(updatedMessages);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileUpload = (file: File) => {
+    console.log('File uploaded:', file.name);
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const fileMessage: ChatMessage = {
+        id: Date.now(),
+        text: `Uploaded file: ${file.name}`,
+        sender: 'user',
+        timestamp: new Date(),
+        model: selectedModel
+      };
+      
+      if (file.type.startsWith('image/')) {
+        fileMessage.imageUrl = e.target?.result as string;
+      }
+      
+      const updatedMessages = [...messages, fileMessage];
+      setMessages(updatedMessages);
+      saveCurrentSession(updatedMessages);
+    };
+    
+    if (file.type.startsWith('image/')) {
+      reader.readAsDataURL(file);
+    } else {
+      reader.readAsText(file);
+    }
+  };
+
+  const handleSelectSession = (session: ChatSession) => {
+    setMessages(session.messages);
+    setCurrentSessionId(session.id);
+    setShowHistory(false);
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    loadChatHistory();
+    if (sessionId === currentSessionId) {
+      generateNewSession();
     }
   };
 
@@ -183,7 +293,7 @@ CrazeGPT is based on Gemini AI and can help you with:
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          // Welcome Screen - Enhanced
+          // Welcome Screen
           <div className="flex items-center justify-center h-full p-6">
             <div className="text-center max-w-4xl mx-auto">
               <div className="mb-8">
@@ -194,54 +304,43 @@ CrazeGPT is based on Gemini AI and can help you with:
                   Welcome to CrazeGPT
                 </h1>
                 <p className="text-gray-600 text-xl mb-2">
-                  Your Professional AI Assistant
+                  Your Professional AI Assistant with Advanced Features
                 </p>
                 <p className="text-gray-500 text-lg">
                   Created by **CraftingCrazeGaming** • Powered by Gemini AI
                 </p>
               </div>
               
-              {/* Enhanced Feature Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">✨</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Rich Text Formatting</h3>
-                  <p className="text-gray-600 text-sm">Create **bold**, *italic*, and `code` formatted text</p>
+                  <div className="text-4xl mb-4">🧠</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Multiple AI Models</h3>
+                  <p className="text-gray-600 text-sm">Choose from different AI models for specific tasks</p>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">🖼️</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Image Generation</h3>
-                  <p className="text-gray-600 text-sm">Generate and upload images with AI</p>
+                  <div className="text-4xl mb-4">💾</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Chat History</h3>
+                  <p className="text-gray-600 text-sm">Save and resume your conversations anytime</p>
+                </div>
+                <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
+                  <div className="text-4xl mb-4">📋</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Code with Copy</h3>
+                  <p className="text-gray-600 text-sm">Generate code blocks with one-click copy</p>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
                   <div className="text-4xl mb-4">📁</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">File Creation</h3>
-                  <p className="text-gray-600 text-sm">Generate ZIP, JSON, HTML, and other files</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">File Upload & Generation</h3>
+                  <p className="text-gray-600 text-sm">Upload files and generate any file type</p>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">✍️</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Advanced Text Editor</h3>
-                  <p className="text-gray-600 text-sm">Rich text editing with AI enhancement</p>
+                  <div className="text-4xl mb-4">🖼️</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Image Creation</h3>
+                  <p className="text-gray-600 text-sm">Generate and analyze images with AI</p>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">🧠</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Intelligent Responses</h3>
-                  <p className="text-gray-600 text-sm">Powered by advanced AI technology</p>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-                  <div className="text-4xl mb-4">⚡</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Lightning Fast</h3>
-                  <p className="text-gray-600 text-sm">Quick responses and seamless experience</p>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 shadow-lg">
-                <h2 className="text-xl font-semibold mb-2">Try asking me:</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  <p>"Who created you?"</p>
-                  <p>"Generate an image of a sunset"</p>
-                  <p>"Create a JSON file"</p>
-                  <p>"Help me format text"</p>
+                  <div className="text-4xl mb-4">✨</div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Rich Text Editor</h3>
+                  <p className="text-gray-600 text-sm">Advanced text formatting and editing</p>
                 </div>
               </div>
             </div>
@@ -299,16 +398,46 @@ CrazeGPT is based on Gemini AI and can help you with:
       {/* Enhanced Input Area */}
       <div className="border-t border-gray-200 bg-white/90 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="mb-3 flex gap-2 items-center">
-            <Button
-              variant={useTextEditor ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setUseTextEditor(!useTextEditor)}
-              className="text-xs"
-            >
-              {useTextEditor ? "Simple Mode" : "Rich Editor"}
-            </Button>
+          <div className="mb-3 flex gap-2 items-center justify-between">
+            <div className="flex gap-2 items-center">
+              <Button
+                variant={useTextEditor ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setUseTextEditor(!useTextEditor)}
+                className="text-xs"
+              >
+                {useTextEditor ? "Simple Mode" : "Rich Editor"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={generateNewSession}
+                className="text-xs"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                New Chat
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHistory(!showHistory)}
+                className="text-xs"
+              >
+                History ({chatHistory.length})
+              </Button>
+            </div>
+            <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
           </div>
+
+          {showHistory && (
+            <div className="mb-4 max-h-60 overflow-y-auto border rounded-lg p-4 bg-gray-50">
+              <ChatHistory 
+                sessions={chatHistory}
+                onSelectSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
+              />
+            </div>
+          )}
           
           <div className="relative bg-white rounded-3xl border-2 border-gray-200 focus-within:border-blue-400 focus-within:shadow-lg transition-all duration-200">
             <div className="flex items-end gap-3 p-4">
@@ -316,6 +445,7 @@ CrazeGPT is based on Gemini AI and can help you with:
                 <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700 hover:bg-gray-100">
                   <Paperclip className="w-4 h-4" />
                 </Button>
+                <FileUpload onFileSelect={handleFileUpload} />
                 <PhotoSelector 
                   onImageSelect={handleImageSelect}
                   onImageGenerate={handleImageGenerate}
@@ -358,7 +488,7 @@ CrazeGPT is based on Gemini AI and can help you with:
           </div>
           
           <p className="text-xs text-gray-500 text-center mt-3">
-            <strong>CrazeGPT</strong> • Created by CraftingCrazeGaming • Powered by Gemini AI
+            <strong>CrazeGPT</strong> • Created by CraftingCrazeGaming • Model: {selectedModel.replace('-', ' ').toUpperCase()}
           </p>
         </div>
       </div>
