@@ -1,12 +1,24 @@
+
 import { MessageSquare, Library, Settings, Plus, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ChatHistory from "@/components/ChatHistory";
+import { ChatSession } from "@/services/chatHistoryService";
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  chatSessions?: ChatSession[];
+  onSelectSession?: (session: ChatSession) => void;
+  onDeleteSession?: (sessionId: string) => void;
 }
 
-const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
+const Sidebar = ({ 
+  isOpen, 
+  onToggle, 
+  chatSessions = [], 
+  onSelectSession = () => {}, 
+  onDeleteSession = () => {} 
+}: SidebarProps) => {
   const menuItems = [
     { icon: MessageSquare, label: "CrazeGPT", active: true },
     { icon: Library, label: "Chat Library" },
@@ -77,25 +89,13 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
               ))}
             </div>
 
-            {/* Features Section */}
+            {/* Chat History Section */}
             <div className="mt-8">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Features
-              </h3>
-              <div className="space-y-1">
-                <div className="px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg cursor-pointer transition-colors">
-                  <div className="text-sm font-medium truncate">📋 Code Generation</div>
-                  <div className="text-xs text-gray-500">With copy button</div>
-                </div>
-                <div className="px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg cursor-pointer transition-colors">
-                  <div className="text-sm font-medium truncate">🖼️ Image Creator</div>
-                  <div className="text-xs text-gray-500">AI powered</div>
-                </div>
-                <div className="px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg cursor-pointer transition-colors">
-                  <div className="text-sm font-medium truncate">📁 File Generator</div>
-                  <div className="text-xs text-gray-500">Any format</div>
-                </div>
-              </div>
+              <ChatHistory 
+                sessions={chatSessions}
+                onSelectSession={onSelectSession}
+                onDeleteSession={onDeleteSession}
+              />
             </div>
           </nav>
 
