@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ChatArea from "@/components/ChatArea";
 import Sidebar from "@/components/Sidebar";
+import LandingPage from "@/components/LandingPage";
 import { ChatSession, getChatHistory } from "@/services/chatHistoryService";
 
 const Index = () => {
@@ -12,6 +13,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>("");
+  const [showLanding, setShowLanding] = useState(true);
 
   useEffect(() => {
     loadChatHistory();
@@ -20,10 +22,15 @@ const Index = () => {
   const loadChatHistory = () => {
     const history = getChatHistory();
     setChatSessions(history);
+    // If there are existing sessions, don't show landing page
+    if (history.length > 0) {
+      setShowLanding(false);
+    }
   };
 
   const handleSelectSession = (session: ChatSession) => {
     setCurrentSessionId(session.id);
+    setShowLanding(false);
   };
 
   const handleDeleteSession = (sessionId: string) => {
@@ -35,7 +42,16 @@ const Index = () => {
 
   const handleSessionUpdate = () => {
     loadChatHistory();
+    setShowLanding(false);
   };
+
+  const handleGetStarted = () => {
+    setShowLanding(false);
+  };
+
+  if (showLanding) {
+    return <LandingPage onGetStarted={handleGetStarted} />;
+  }
 
   return (
     <div className="min-h-screen bg-white flex w-full">
