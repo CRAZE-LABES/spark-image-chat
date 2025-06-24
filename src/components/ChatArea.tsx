@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Send, Mic, Paperclip, Download, Plus } from "lucide-react";
+import { Send, Mic, Paperclip, Download, Plus, Edit2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMessageToGemini } from "@/services/geminiApi";
 import { generateImage } from "@/services/imageService";
@@ -26,6 +26,8 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
   const [currentSessionId, setCurrentSessionId] = useState<string>("");
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   useEffect(() => {
     loadChatHistory();
@@ -76,6 +78,20 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
     onSessionUpdate?.();
   };
 
+  const isCodeRelated = (text: string): boolean => {
+    const codeKeywords = [
+      'code', 'function', 'class', 'variable', 'import', 'export', 'const', 'let', 'var',
+      'javascript', 'python', 'java', 'css', 'html', 'react', 'typescript',
+      'algorithm', 'programming', 'script', 'syntax', 'debug', 'compile',
+      'create function', 'write code', 'fix bug', 'implement', 'refactor'
+    ];
+    
+    const lowerText = text.toLowerCase();
+    return codeKeywords.some(keyword => lowerText.includes(keyword)) || 
+           text.includes('```') || 
+           text.includes('`');
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
     
@@ -105,11 +121,16 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
       
       // Build conversation context for memory
       const conversationContext = updatedMessages
-        .slice(-10) // Last 10 messages for context
+        .slice(-10)
         .map(msg => `${msg.sender === 'user' ? 'User' : 'Assistant'}: ${msg.text}`)
         .join('\n');
       
-      const contextualMessage = `Previous conversation context:\n${conversationContext}\n\nCurrent question: ${currentMessage}`;
+      // Only add code generation instruction if message is code-related
+      let contextualMessage = `Previous conversation context:\n${conversationContext}\n\nCurrent question: ${currentMessage}`;
+      
+      if (isCodeRelated(currentMessage)) {
+        contextualMessage += '\n\nNote: Format any code examples with proper markdown code blocks using ```language syntax.';
+      }
       
       const aiResponse = await sendMessageToGemini(contextualMessage);
       
@@ -143,6 +164,33 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditMessage = (messageId: number) => {
+    const messageToEdit = messages.find(msg => msg.id === messageId);
+    if (messageToEdit) {
+      setEditingMessageId(messageId);
+      setEditingText(messageToEdit.text);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (editingMessageId && editingText.trim()) {
+      const updatedMessages = messages.map(msg => 
+        msg.id === editingMessageId 
+          ? { ...msg, text: editingText, timestamp: new Date() }
+          : msg
+      );
+      setMessages(updatedMessages);
+      saveCurrentSession(updatedMessages);
+      setEditingMessageId(null);
+      setEditingText("");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText("");
   };
 
   const handleFileGeneration = async (prompt: string, currentMessages: ChatMessage[]) => {
@@ -371,9 +419,41 @@ CrazeGPT is based on Gemini AI and can help you with:
           // Messages
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className="max-w-3xl">
-                  <MessageRenderer content={msg.text} sender={msg.sender} />
+              <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} group`}>
+                <div className="max-w-3xl relative">
+                  {editingMessageId === msg.id ? (
+                    <div className="bg-white rounded-2xl p-4 border-2 border-blue-400 shadow-lg">
+                      <textarea
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        className="w-full p-2 border rounded resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={3}
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <Button size="sm" onClick={handleSaveEdit} className="bg-green-600 hover:bg-green-700">
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <MessageRenderer content={msg.text} sender={msg.sender} />
+                      {msg.sender === 'user' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute -right-10 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleEditMessage(msg.id)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  
                   {msg.imageUrl && (
                     <div className="mt-3">
                       <img 
