@@ -1,14 +1,40 @@
 
 import React from 'react';
-import { Bold, Image, File } from 'lucide-react';
+import { Bold, Image, File, Copy, TextSelect, Edit2 } from 'lucide-react';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import CodeBlock from './CodeBlock';
 
 interface MessageRendererProps {
   content: string;
   sender: 'user' | 'ai';
+  messageId?: number;
+  onEditMessage?: (messageId: number) => void;
 }
 
-const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender }) => {
+const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender, messageId, onEditMessage }) => {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+  };
+
+  const handleSelectText = () => {
+    if (window.getSelection) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const messageElement = document.getElementById(`message-${messageId}`);
+      if (messageElement) {
+        range.selectNodeContents(messageElement);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    }
+  };
+
+  const handleEditMessage = () => {
+    if (messageId && onEditMessage) {
+      onEditMessage(messageId);
+    }
+  };
+
   const renderFormattedText = (text: string) => {
     // Handle code blocks first (```code```)
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
@@ -17,13 +43,11 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender }) =>
     let match;
 
     while ((match = codeBlockRegex.exec(text)) !== null) {
-      // Add text before code block
       if (match.index > lastIndex) {
         const beforeText = text.substring(lastIndex, match.index);
         parts.push({ type: 'text', content: beforeText });
       }
       
-      // Add code block
       const language = match[1] || 'text';
       const code = match[2].trim();
       parts.push({ type: 'code', content: code, language });
@@ -31,12 +55,10 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender }) =>
       lastIndex = match.index + match[0].length;
     }
 
-    // Add remaining text
     if (lastIndex < text.length) {
       parts.push({ type: 'text', content: text.substring(lastIndex) });
     }
 
-    // If no code blocks found, treat as regular text
     if (parts.length === 0) {
       parts = [{ type: 'text', content: text }];
     }
@@ -45,7 +67,6 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender }) =>
       if (part.type === 'code') {
         return <CodeBlock key={index} code={part.content} language={part.language} />;
       } else {
-        // Apply markdown formatting to text parts
         let formatted = part.content;
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         formatted = formatted.replace(/__(.*?)__/g, '<strong>$1</strong>');
@@ -65,32 +86,55 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender }) =>
   };
 
   return (
-    <div className={`max-w-3xl ${
-      sender === 'user' 
-        ? 'bg-blue-600 text-white rounded-2xl rounded-br-md' 
-        : 'bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md'
-    } px-4 py-3`}>
-      <div className="overflow-hidden">
-        {renderFormattedText(content)}
-      </div>
-      
-      {sender === 'ai' && (
-        <div className="mt-3 flex gap-2 text-xs text-gray-500">
-          <div className="flex items-center gap-1">
-            <Bold className="w-3 h-3" />
-            <span>Text formatting</span>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div 
+          id={`message-${messageId}`}
+          className={`max-w-3xl ${
+            sender === 'user' 
+              ? 'bg-blue-600 text-white rounded-2xl rounded-br-md' 
+              : 'bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md'
+          } px-4 py-3 cursor-pointer select-text`}
+        >
+          <div className="overflow-hidden">
+            {renderFormattedText(content)}
           </div>
-          <div className="flex items-center gap-1">
-            <Image className="w-3 h-3" />
-            <span>Image analysis</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <File className="w-3 h-3" />
-            <span>File generation</span>
-          </div>
+          
+          {sender === 'ai' && (
+            <div className="mt-3 flex gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <Bold className="w-3 h-3" />
+                <span>Text formatting</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image className="w-3 h-3" />
+                <span>Image analysis</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <File className="w-3 h-3" />
+                <span>File generation</span>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-48 bg-white border border-gray-200 shadow-lg rounded-lg z-50">
+        <ContextMenuItem onClick={handleCopy} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer">
+          <Copy className="w-4 h-4" />
+          Copy
+        </ContextMenuItem>
+        <ContextMenuItem onClick={handleSelectText} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer">
+          <TextSelect className="w-4 h-4" />
+          Select Text
+        </ContextMenuItem>
+        {sender === 'user' && messageId && onEditMessage && (
+          <ContextMenuItem onClick={handleEditMessage} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer">
+            <Edit2 className="w-4 h-4" />
+            Edit Message
+          </ContextMenuItem>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 

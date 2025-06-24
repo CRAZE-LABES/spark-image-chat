@@ -119,13 +119,11 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
         return;
       }
       
-      // Build conversation context for memory
       const conversationContext = updatedMessages
         .slice(-10)
         .map(msg => `${msg.sender === 'user' ? 'User' : 'Assistant'}: ${msg.text}`)
         .join('\n');
       
-      // Only add code generation instruction if message is code-related
       let contextualMessage = `Previous conversation context:\n${conversationContext}\n\nCurrent question: ${currentMessage}`;
       
       if (isCodeRelated(currentMessage)) {
@@ -416,7 +414,7 @@ CrazeGPT is based on Gemini AI and can help you with:
             </div>
           </div>
         ) : (
-          // Messages
+          // Messages with context menu support
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} group`}>
@@ -440,7 +438,12 @@ CrazeGPT is based on Gemini AI and can help you with:
                     </div>
                   ) : (
                     <>
-                      <MessageRenderer content={msg.text} sender={msg.sender} />
+                      <MessageRenderer 
+                        content={msg.text} 
+                        sender={msg.sender} 
+                        messageId={msg.id}
+                        onEditMessage={handleEditMessage}
+                      />
                       {msg.sender === 'user' && (
                         <Button
                           size="sm"
