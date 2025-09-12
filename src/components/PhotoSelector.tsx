@@ -7,9 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 interface PhotoSelectorProps {
   onImageSelect: (imageUrl: string) => void;
   onImageGenerate: (prompt: string) => void;
+  className?: string;
 }
 
-const PhotoSelector: React.FC<PhotoSelectorProps> = ({ onImageSelect, onImageGenerate }) => {
+const PhotoSelector: React.FC<PhotoSelectorProps> = ({ onImageSelect, onImageGenerate, className }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -45,7 +46,7 @@ const PhotoSelector: React.FC<PhotoSelectorProps> = ({ onImageSelect, onImageGen
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+        <Button variant="ghost" size="sm" className={`text-gray-500 hover:text-gray-700 ${className}`}>
           <Image className="w-4 h-4" />
         </Button>
       </DialogTrigger>
@@ -55,19 +56,20 @@ const PhotoSelector: React.FC<PhotoSelectorProps> = ({ onImageSelect, onImageGen
         </DialogHeader>
         <div className="space-y-4">
           {/* Upload Image */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
             <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-600 mb-2">Upload an image</p>
             <input
               type="file"
               accept="image/*"
+              multiple
               onChange={handleFileUpload}
               className="hidden"
               id="image-upload"
             />
             <label htmlFor="image-upload">
               <Button variant="outline" size="sm" className="cursor-pointer">
-                Choose File
+                Choose Files
               </Button>
             </label>
           </div>

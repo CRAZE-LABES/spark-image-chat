@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Send, Mic, Paperclip, Download, Plus, Edit2, Check, X } from "lucide-react";
+import { Send, Mic, Paperclip, Download, Plus, Edit2, Check, X, Image as ImageIcon, Trash2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMessageToGemini } from "@/services/geminiApi";
 import { generateImage } from "@/services/imageService";
@@ -11,6 +11,14 @@ import TextEditor from "./TextEditor";
 import ModelSelector from "./ModelSelector";
 import ChatHistory from "./ChatHistory";
 import FileUpload from "./FileUpload";
+import TypingIndicator from "./TypingIndicator";
+
+interface StagedFile {
+  id: string;
+  file: File;
+  url: string;
+  type: 'image' | 'document';
+}
 
 interface ChatAreaProps {
   selectedSessionId?: string;
@@ -28,6 +36,8 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     loadChatHistory();
@@ -93,22 +103,25 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() && stagedFiles.length === 0) return;
     
-    console.log('Sending message:', message);
+    console.log('Sending message:', message, 'with files:', stagedFiles.length);
     
     const newMessage: ChatMessage = {
       id: Date.now(),
-      text: message,
+      text: message || (stagedFiles.length > 0 ? "Shared files" : ""),
       sender: 'user',
       timestamp: new Date(),
-      model: selectedModel
+      model: selectedModel,
+      imageUrl: stagedFiles.find(f => f.type === 'image')?.url
     };
     
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
     const currentMessage = message;
+    const currentFiles = stagedFiles;
     setMessage("");
+    setStagedFiles([]);
     setIsLoading(true);
     
     try {
@@ -125,6 +138,11 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
         .join('\n');
       
       let contextualMessage = `Previous conversation context:\n${conversationContext}\n\nCurrent question: ${currentMessage}`;
+      
+      if (currentFiles.length > 0) {
+        const fileDescriptions = currentFiles.map(f => `${f.type}: ${f.file.name}`).join(', ');
+        contextualMessage += `\n\nAttached files: ${fileDescriptions}. Please analyze and respond to any images or files shared.`;
+      }
       
       if (isCodeRelated(currentMessage)) {
         contextualMessage += '\n\nNote: Format any code examples with proper markdown code blocks using ```language syntax.';
@@ -269,17 +287,14 @@ CrazeGPT is based on Gemini AI and can help you with:
 
   const handleImageSelect = (imageUrl: string) => {
     console.log('Image selected:', imageUrl);
-    const imageMessage: ChatMessage = {
-      id: Date.now(),
-      text: "Here's the image you selected:",
-      sender: 'user',
-      timestamp: new Date(),
-      imageUrl,
-      model: selectedModel
+    // Stage the image instead of immediately sending
+    const newStagedFile: StagedFile = {
+      id: `staged_${Date.now()}`,
+      file: new File([], 'selected-image.jpg', { type: 'image/jpeg' }),
+      url: imageUrl,
+      type: 'image'
     };
-    const updatedMessages = [...messages, imageMessage];
-    setMessages(updatedMessages);
-    saveCurrentSession(updatedMessages);
+    setStagedFiles(prev => [...prev, newStagedFile]);
   };
 
   const handleImageGenerate = async (prompt: string) => {
@@ -321,21 +336,13 @@ CrazeGPT is based on Gemini AI and can help you with:
     const reader = new FileReader();
     
     reader.onload = (e) => {
-      const fileMessage: ChatMessage = {
-        id: Date.now(),
-        text: `Uploaded file: ${file.name}`,
-        sender: 'user',
-        timestamp: new Date(),
-        model: selectedModel
+      const newStagedFile: StagedFile = {
+        id: `staged_${Date.now()}`,
+        file,
+        url: e.target?.result as string,
+        type: file.type.startsWith('image/') ? 'image' : 'document'
       };
-      
-      if (file.type.startsWith('image/')) {
-        fileMessage.imageUrl = e.target?.result as string;
-      }
-      
-      const updatedMessages = [...messages, fileMessage];
-      setMessages(updatedMessages);
-      saveCurrentSession(updatedMessages);
+      setStagedFiles(prev => [...prev, newStagedFile]);
     };
     
     if (file.type.startsWith('image/')) {
@@ -343,6 +350,15 @@ CrazeGPT is based on Gemini AI and can help you with:
     } else {
       reader.readAsText(file);
     }
+  };
+
+  const handleRemoveStagedFile = (fileId: string) => {
+    setStagedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
+  const handleTypingIndicator = () => {
+    setIsTyping(true);
+    setTimeout(() => setIsTyping(false), 1000);
   };
 
   const handleSelectSession = (session: ChatSession) => {
@@ -364,6 +380,7 @@ CrazeGPT is based on Gemini AI and can help you with:
       e.preventDefault();
       handleSendMessage();
     }
+    handleTypingIndicator();
   };
 
   return (
@@ -443,6 +460,10 @@ CrazeGPT is based on Gemini AI and can help you with:
                         sender={msg.sender} 
                         messageId={msg.id}
                         onEditMessage={handleEditMessage}
+                        imageUrl={msg.imageUrl}
+                        fileUrl={msg.fileUrl}
+                        fileName={msg.fileName}
+                        attachments={msg.attachments}
                       />
                       {msg.sender === 'user' && (
                         <Button
@@ -485,17 +506,9 @@ CrazeGPT is based on Gemini AI and can help you with:
                 </div>
               </div>
             ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                  </div>
-                </div>
-              </div>
-            )}
+            
+            {/* Enhanced Typing Indicator */}
+            <TypingIndicator isVisible={isLoading} message="CrazeGPT is thinking..." />
           </div>
         )}
       </div>
@@ -545,12 +558,67 @@ CrazeGPT is based on Gemini AI and can help you with:
           )}
           
           <div className="relative bg-white rounded-3xl border-2 border-gray-200 focus-within:border-blue-400 focus-within:shadow-lg transition-all duration-200">
+            {/* Staged Files Preview */}
+            {stagedFiles.length > 0 && (
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex flex-wrap gap-3">
+                  {stagedFiles.map((file) => (
+                    <div key={file.id} className="relative group">
+                      {file.type === 'image' ? (
+                        <div className="relative">
+                          <img 
+                            src={file.url} 
+                            alt={file.file.name}
+                            className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white text-red-600 hover:text-red-700 p-1 h-auto"
+                              onClick={() => handleRemoveStagedFile(file.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <div className="absolute -top-2 -right-2">
+                            <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                              <ImageIcon className="w-3 h-3" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center relative group">
+                          <Paperclip className="w-6 h-6 text-gray-500" />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white border text-red-600 hover:text-red-700 p-1 h-auto"
+                            onClick={() => handleRemoveStagedFile(file.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-600 mt-1 truncate w-20" title={file.file.name}>
+                        {file.file.name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-end gap-3 p-4">
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700 hover:bg-gray-100">
                   <Paperclip className="w-4 h-4" />
                 </Button>
-                <FileUpload onFileSelect={handleFileUpload} />
+                <FileUpload 
+                  onFileSelect={handleFileUpload}
+                  multiple={true}
+                  accept="image/*,.pdf,.txt,.doc,.docx,.json,.csv,.py,.js,.html,.css"
+                />
                 <PhotoSelector 
                   onImageSelect={handleImageSelect}
                   onImageGenerate={handleImageGenerate}
@@ -569,7 +637,7 @@ CrazeGPT is based on Gemini AI and can help you with:
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Ask me anything! I remember our conversation and have infinite capabilities..."
+                    placeholder={stagedFiles.length > 0 ? "Add a message with your files..." : "Ask me anything! I remember our conversation and have infinite capabilities..."}
                     disabled={isLoading}
                     className="w-full border-0 bg-transparent focus:ring-0 text-gray-900 placeholder-gray-500 outline-none text-lg"
                   />
@@ -582,7 +650,7 @@ CrazeGPT is based on Gemini AI and can help you with:
                 </Button>
                 <Button 
                   onClick={handleSendMessage}
-                  disabled={!message.trim() || isLoading}
+                  disabled={(!message.trim() && stagedFiles.length === 0) || isLoading}
                   size="sm" 
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full p-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-200"
                 >

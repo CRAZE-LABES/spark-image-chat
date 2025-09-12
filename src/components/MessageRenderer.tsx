@@ -3,15 +3,33 @@ import React from 'react';
 import { Bold, Image, File, Copy, TextSelect, Edit2 } from 'lucide-react';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import CodeBlock from './CodeBlock';
+import MessageAttachments from './MessageAttachments';
 
 interface MessageRendererProps {
   content: string;
   sender: 'user' | 'ai';
   messageId?: number;
   onEditMessage?: (messageId: number) => void;
+  imageUrl?: string;
+  fileUrl?: string;
+  fileName?: string;
+  attachments?: Array<{
+    type: 'image' | 'document';
+    url: string;
+    name: string;
+  }>;
 }
 
-const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender, messageId, onEditMessage }) => {
+const MessageRenderer: React.FC<MessageRendererProps> = ({ 
+  content, 
+  sender, 
+  messageId, 
+  onEditMessage,
+  imageUrl,
+  fileUrl,
+  fileName,
+  attachments
+}) => {
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
   };
@@ -99,6 +117,14 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({ content, sender, mess
           <div className="overflow-hidden">
             {renderFormattedText(content)}
           </div>
+          
+          {/* Attachments */}
+          <MessageAttachments 
+            attachments={attachments}
+            imageUrl={imageUrl}
+            fileUrl={fileUrl}
+            fileName={fileName}
+          />
           
           {sender === 'ai' && (
             <div className="mt-3 flex gap-2 text-xs text-gray-500">

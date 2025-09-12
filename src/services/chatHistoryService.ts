@@ -7,6 +7,11 @@ export interface ChatMessage {
   fileUrl?: string;
   fileName?: string;
   model?: string;
+  attachments?: Array<{
+    type: 'image' | 'document';
+    url: string;
+    name: string;
+  }>;
 }
 
 export interface ChatSession {
