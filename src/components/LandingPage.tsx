@@ -99,7 +99,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <p className="text-lg text-gray-800 leading-relaxed">
               This official app is <strong>completely free</strong>, syncs your history across devices with <strong>perfect memory</strong>, 
               and brings you the latest AI advancements from CraftingCrazeGaming, including unlimited image generation, 
-              infinite code creation, and capabilities that <strong>surpass ChatGPT, DeepSeek, Grok, and Claude AI</strong>.
+              infinite code creation, and advanced AI capabilities.
             </p>
           </div>
         </div>
@@ -177,8 +177,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </div>
             <div className="text-center">
               <div className="text-3xl mb-2">🚀</div>
-              <h4 className="font-semibold text-gray-900 mb-1">Advanced Beyond</h4>
-              <p className="text-sm text-gray-600">ChatGPT, DeepSeek, Grok, Claude</p>
+              <h4 className="font-semibold text-gray-900 mb-1">Advanced AI</h4>
+              <p className="text-sm text-gray-600">Powerful capabilities</p>
             </div>
           </div>
         </div>

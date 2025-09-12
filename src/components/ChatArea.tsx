@@ -402,7 +402,7 @@ CrazeGPT is based on Gemini AI and can help you with:
                   Your Professional AI Assistant with Infinite Intelligence
                 </p>
                 <p className="text-gray-500 text-lg">
-                  Created by **CraftingCrazeGaming** • More Advanced than ChatGPT, DeepSeek, Grok, and Claude
+                  Created by **CraftingCrazeGaming** • Professional AI Assistant
                 </p>
               </div>
               
@@ -661,7 +661,7 @@ CrazeGPT is based on Gemini AI and can help you with:
           </div>
           
           <p className="text-xs text-gray-500 text-center mt-3">
-            <strong>CrazeGPT</strong> • Created by CraftingCrazeGaming • Model: {selectedModel.replace('-', ' ').toUpperCase()} • More Advanced than ChatGPT, DeepSeek, Grok & Claude
+            <strong>CrazeGPT</strong> • Created by CraftingCrazeGaming • Model: {selectedModel.replace('-', ' ').toUpperCase()}
           </p>
         </div>
       </div>
