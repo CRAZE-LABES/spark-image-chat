@@ -7,7 +7,9 @@ export interface GeminiMessage {
   parts: { text: string }[];
 }
 
-export const sendMessageToGemini = async (message: string): Promise<string> => {
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const sendMessageToGemini = async (message: string, retryCount = 0): Promise<string> => {
   try {
     console.log('Sending message to Gemini API:', message);
     
@@ -62,9 +64,30 @@ Respond with detailed, helpful information. Use markdown formatting for better r
 
     console.log('API Response status:', response.status);
     
+    // Handle rate limiting with retry
+    if (response.status === 429) {
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        console.log(`Rate limited. Retrying in ${delay}ms...`);
+        await sleep(delay);
+        return sendMessageToGemini(message, retryCount + 1);
+      } else {
+        throw new Error('Rate limit exceeded. Please try again in a few minutes or use your own API key.');
+      }
+    }
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API Error Response:', errorText);
+      
+      // Handle specific error cases
+      if (response.status === 403) {
+        throw new Error('API key invalid or quota exceeded. Please check your API key.');
+      }
+      if (response.status === 400) {
+        throw new Error('Invalid request format. Please try again.');
+      }
+      
       throw new Error(`API Error ${response.status}: ${response.statusText}`);
     }
 
@@ -79,6 +102,17 @@ Respond with detailed, helpful information. Use markdown formatting for better r
     }
   } catch (error) {
     console.error('Gemini API Error:', error);
+    
+    // Return user-friendly error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Rate limit exceeded')) {
+        return '⚠️ **Rate limit reached** - The API is temporarily unavailable due to high usage. Please wait a few minutes before trying again, or consider using your own Gemini API key for unlimited access.\n\nYou can get a free API key at: https://makersuite.google.com/app/apikey';
+      }
+      if (error.message.includes('quota exceeded')) {
+        return '⚠️ **API quota exceeded** - Please try again later or use your own Gemini API key for unlimited access.\n\nGet your free API key: https://makersuite.google.com/app/apikey';
+      }
+    }
+    
     throw error;
   }
 };
