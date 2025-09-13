@@ -424,7 +424,7 @@ CrazeGPT is powered by DeepSeek v3.1 and can help you with:
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-xl p-6 cursor-pointer transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
                   <div className="text-4xl mb-4">🚀</div>
-                  <h3 className="font-semibent text-gray-900 mb-2">∞ Features</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">∞ Features</h3>
                   <p className="text-gray-600 text-sm">Infinite capabilities beyond any AI</p>
                 </div>
               </div>
