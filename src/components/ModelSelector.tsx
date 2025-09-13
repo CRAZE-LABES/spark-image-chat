@@ -10,10 +10,10 @@ interface ModelSelectorProps {
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelChange }) => {
   const models = [
-    { id: 'gemini-1.5-flash', name: 'Gemini Flash', icon: Zap, description: 'Fast & Efficient' },
-    { id: 'gemini-1.5-pro', name: 'Gemini Pro', icon: Brain, description: 'Most Capable' },
-    { id: 'gemini-1.0-pro', name: 'Gemini Standard', icon: Sparkles, description: 'Balanced' },
-    { id: 'code-specialist', name: 'Code Expert', icon: Code, description: 'Programming Focus' }
+    { id: 'deepseek-chat', name: 'DeepSeek v3.1', icon: Brain, description: 'Most Advanced' },
+    { id: 'deepseek-coder', name: 'DeepSeek Coder', icon: Code, description: 'Programming Expert' },
+    { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner', icon: Sparkles, description: 'Logical Analysis' },
+    { id: 'deepseek-fast', name: 'DeepSeek Fast', icon: Zap, description: 'Quick Response' }
   ];
 
   return (

@@ -30,7 +30,7 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [useTextEditor, setUseTextEditor] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
+  const [selectedModel, setSelectedModel] = useState("deepseek-chat");
   const [currentSessionId, setCurrentSessionId] = useState<string>("");
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -243,7 +243,7 @@ Created by: CraftingCrazeGaming
 Generated on: ${new Date().toLocaleString()}
 Prompt: ${prompt}
 
-CrazeGPT is based on Gemini AI and can help you with:
+CrazeGPT is powered by DeepSeek v3.1 and can help you with:
 - Text formatting and editing
 - Image generation
 - File creation
