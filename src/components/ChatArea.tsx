@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Send, Mic, Paperclip, Download, Plus, Edit2, Check, X, Image as ImageIcon, Trash2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { sendMessageToGemini } from "@/services/geminiApi";
+import { sendMessageToDeepSeek } from "@/services/deepseekApi";
 import { generateImage } from "@/services/imageService";
 import { generateFile, downloadFile } from "@/services/fileService";
 import { ChatSession, ChatMessage, saveChatSession, getChatHistory, generateChatTitle } from "@/services/chatHistoryService";
@@ -148,7 +148,7 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
         contextualMessage += '\n\nNote: Format any code examples with proper markdown code blocks using ```language syntax.';
       }
       
-      const aiResponse = await sendMessageToGemini(contextualMessage);
+      const aiResponse = await sendMessageToDeepSeek(contextualMessage);
       
       const aiMessage: ChatMessage = {
         id: Date.now() + 1,
