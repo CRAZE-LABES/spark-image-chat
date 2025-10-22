@@ -48,6 +48,8 @@ Respond with detailed, helpful information. Use markdown formatting for better r
       headers: {
         'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://crazegpt.app',
+        'X-Title': 'CrazeGPT',
       },
       body: JSON.stringify({
         model: 'deepseek/deepseek-chat',
