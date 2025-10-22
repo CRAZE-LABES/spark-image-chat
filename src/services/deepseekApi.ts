@@ -1,5 +1,5 @@
 const DEEPSEEK_API_KEY = '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';
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+const DEEPSEEK_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export interface DeepSeekMessage {
   role: 'user' | 'assistant' | 'system';
@@ -50,7 +50,7 @@ Respond with detailed, helpful information. Use markdown formatting for better r
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek/deepseek-chat',
         messages: messages,
         temperature: 0.8,
         top_p: 0.95,
