@@ -10,10 +10,8 @@ interface ModelSelectorProps {
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelChange }) => {
   const models = [
-    { id: 'deepseek-chat', name: 'DeepSeek v3.1', icon: Brain, description: 'Most Advanced' },
-    { id: 'deepseek-coder', name: 'DeepSeek Coder', icon: Code, description: 'Programming Expert' },
-    { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner', icon: Sparkles, description: 'Logical Analysis' },
-    { id: 'deepseek-fast', name: 'DeepSeek Fast', icon: Zap, description: 'Quick Response' }
+    { id: 'deepseek-chat', name: 'DeepSeek Chat', icon: Brain, description: 'Balanced & Smart' },
+    { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner', icon: Sparkles, description: 'Deep Thinking' }
   ];
 
   return (

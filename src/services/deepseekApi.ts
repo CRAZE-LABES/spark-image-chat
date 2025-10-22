@@ -1,4 +1,4 @@
-const DEEPSEEK_API_KEY = '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';
+const DEEPSEEK_API_KEY = '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';
 const DEEPSEEK_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export interface DeepSeekMessage {
@@ -8,7 +8,7 @@ export interface DeepSeekMessage {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const sendMessageToDeepSeek = async (message: string, retryCount = 0): Promise<string> => {
+export const sendMessageToDeepSeek = async (message: string, model: string = 'deepseek/deepseek-chat', retryCount = 0): Promise<string> => {
   try {
     console.log('Sending message to DeepSeek API:', message);
     
@@ -52,7 +52,7 @@ Respond with detailed, helpful information. Use markdown formatting for better r
         'X-Title': 'CrazeGPT',
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat',
+        model: model,
         messages: messages,
         temperature: 0.8,
         top_p: 0.95,
@@ -69,7 +69,7 @@ Respond with detailed, helpful information. Use markdown formatting for better r
         const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
         console.log(`Rate limited. Retrying in ${delay}ms...`);
         await sleep(delay);
-        return sendMessageToDeepSeek(message, retryCount + 1);
+        return sendMessageToDeepSeek(message, model, retryCount + 1);
       } else {
         throw new Error('Rate limit exceeded. Please try again in a few minutes.');
       }

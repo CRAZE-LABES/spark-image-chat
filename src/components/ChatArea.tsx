@@ -148,7 +148,7 @@ const ChatArea = ({ selectedSessionId, onSessionUpdate }: ChatAreaProps) => {
         contextualMessage += '\n\nNote: Format any code examples with proper markdown code blocks using ```language syntax.';
       }
       
-      const aiResponse = await sendMessageToDeepSeek(contextualMessage);
+      const aiResponse = await sendMessageToDeepSeek(contextualMessage, `deepseek/${selectedModel}`);
       
       const aiMessage: ChatMessage = {
         id: Date.now() + 1,
